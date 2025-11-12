@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const topic = formData.get("topic") as string;
     const file = formData.get("file") as File | null;
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not configured in environment variables");
