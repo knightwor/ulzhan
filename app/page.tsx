@@ -1,65 +1,190 @@
-import Image from "next/image";
+"use client";
+
+import { useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Github, Plus } from "lucide-react";
+import LoadingDots from "@/components/LoadingDots";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const [topic, setTopic] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  const handleGenerate = async () => {
+    
+    if (!topic && !file) {
+      setError("Please enter a topic or upload a PDF!");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    
+    const formData = new FormData();
+    if (topic) formData.append("topic", topic);
+    if (file) formData.append("file", file);
+
+    try {
+      console.log("Sending request to /api/gemini...");
+      
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Received non-JSON response:", text.substring(0, 200));
+        throw new Error("Server returned HTML instead of JSON. Check your API route path.");
+      }
+
+      const data = await res.json();
+      
+      console.log("Received data:", data);
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data.words || !data.clues) {
+        throw new Error("Invalid puzzle data received");
+      }
+
+      localStorage.setItem("puzzle", JSON.stringify(data));
+      router.push("/puzzle");
+      
+    } catch (err) {
+      console.error("Error generating puzzle:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate puzzle";
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      
+      if (selectedFile.type !== "application/pdf") {
+        setError("Please select a PDF file");
+        return;
+      }
+      
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError("PDF file must be smaller than 10MB");
+        return;
+      }
+      
+      setFile(selectedFile);
+      setError("");
+      console.log("File selected:", selectedFile.name, selectedFile.size, "bytes");
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="min-h-dvh overflow-hidden flex flex-col items-center justify-center gap-5 text-center px-6">
+      <motion.h1
+        className="w-full text-[max(4rem,min(8vw,15rem))] heading uppercase text-cc-primery/0 text-center bg-linear-180 bg-clip-text from-cc-primery from-40% to-zinc-400 font-bold main"
+        initial={{ y: -50, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        transition={{
+          duration: 1,
+          type: "spring",
+          velocity: 100,
+          ease: "circOut",
+        }}
+        viewport={{ once: false }}
+      >
+        Ulzhan
+      </motion.h1>
+      
+      <motion.p
+        className="w-[60%] max-[800px]:w-[90%] origin-center text-center text-[max(14px,min(2vw,20px))] text-cc-primery/50 leading-[1.8] flex justify-center items-center"
+        initial={{ scaleX: 0.8, opacity: 0 }}
+        whileInView={{ scaleX: 1, opacity: 1 }}
+        viewport={{ once: false }}
+        transition={{
+          duration: 1,
+          type: "spring",
+          velocity: 0,
+          ease: "circOut",
+        }}
+      >
+        Enter a topic or upload a PDF to create a custom puzzle
+      </motion.p>
+
+      <input
+        type="text"
+        placeholder="Enter a topic (e.g. Space, Food...)"
+        className="px-5 py-2.5 rounded-lg bg-gray-800 text-white w-90 outline-none max-[400px]:w-full"
+        value={topic}
+        onChange={(e) => setTopic(e.target.value)}
+        disabled={loading}
+      />
+
+      {file && (
+        <div className="text-sm text-gray-400 flex items-center gap-2">
+          📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
+          <button
+            onClick={() => setFile(null)}
+            className="text-red-400 hover:text-red-300"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            ✕
+          </button>
         </div>
-      </main>
-    </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      <div className="flex justify-center items-center gap-2 w-90 max-[400px]:w-full">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          disabled={loading || (!topic && !file)}
+          onClick={handleGenerate}
+          className="bg-cc-primery hover:opacity-80 transition-all cursor-pointer text-cc-background px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <>
+              <span>Generating</span>
+              <LoadingDots />
+            </>
+          ) : (
+            "Generate Puzzle"
+          )}
+        </motion.button>
+
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={loading}
+          className="bg-gray-800 px-2.5 py-2.5 rounded-xl hover:bg-gray-700 transition-all disabled:opacity-50 cursor-pointer"
+        >
+          <Plus />
+        </button>
+
+        <Link
+          href={"https://github.com/knightwor/ulzhan"}
+          className="bg-gray-800 px-2.5 py-2.5 rounded-xl hover:bg-gray-700 transition-all"
+        >
+          <Github />
+        </Link>
+      </div>
+    </main>
   );
 }
