@@ -87,6 +87,11 @@ html {
   cursor: default;
 }
 
+.monospace {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+}
+
 .heading {
   font-weight: 400;
   font-family: var(--font-magic-ruby);

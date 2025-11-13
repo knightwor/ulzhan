@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Timer, Trophy, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Timer, Trophy, RefreshCcw, Download } from "lucide-react";
+import StartScreen from "./components/StartScreen";
+import EndScreen from "./components/EndScreen";
 
 export default function PuzzlePage() {
   const [puzzle, setPuzzle] = useState<any>(null);
@@ -43,7 +45,7 @@ export default function PuzzlePage() {
   };
 
   const handleAnswer = (word: string) => {
-    if (!puzzle || selected) return; 
+    if (!puzzle || selected) return;
     setSelected(word);
     const correct = puzzle.words[currentIndex];
 
@@ -62,6 +64,29 @@ export default function PuzzlePage() {
     }, 800);
   };
 
+  const handleDownload = () => {
+    if (!puzzle) return;
+    const blob = new Blob([JSON.stringify(puzzle, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${puzzle.title || "puzzle"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestart = () => {
+    setStarted(false);
+    setCompleted(false);
+    setTime(0);
+    setScore(0);
+    setCurrentIndex(0);
+    setSelected(null);
+    setShuffledWords([...puzzle.words].sort(() => Math.random() - 0.5));
+  }
+
   if (!puzzle) {
     return (
       <div className="min-h-screen flex items-center justify-center text-cc-primery/50">
@@ -71,77 +96,12 @@ export default function PuzzlePage() {
   }
 
   if (!started) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-6">
-        <h1 className="text-4xl font-bold sub-heading ">{puzzle.title}</h1>
-        <p className="text-[max(14px,min(2vw,20px))] text-cc-primery/50 leading-[1.8] ">
-          Guess the correct word based on each clue.
-        </p>
-
-        <button
-          onClick={() => setStarted(true)}
-          className="bg-cc-primery hover:opacity-80 transition-all cursor-pointer text-cc-background px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2"
-        >
-          Start Puzzle
-        </button>
-      </div>
-    );
+    return <StartScreen title={puzzle.title || "Word Puzzle"} setStarted={setStarted} handleDownload={handleDownload} />;
   }
 
   if (completed) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-screen space-y-6"
-      >
-        <Trophy size={64} className="text-yellow-400" />
-        <h1 className="text-3xl font-bold sub-heading">Puzzle Completed</h1>
-
-        <div className="flex flex-col justify-center items-start gap-2">
-          <p className="text-[max(14px,min(2vw,20px))] flex justify-center items-center gap-3">
-            <span className="w-15 flex justify-start items-center font-bold">
-              Score
-            </span>
-            :
-            <span className="w-15 flex justify-start items-center text-cc-primery/70">
-              {score}/{puzzle.words.length}
-            </span>
-          </p>
-          <p className="text-[max(14px,min(2vw,20px))] flex justify-center items-center gap-3">
-            <span className="w-15 flex justify-start items-center font-bold">
-              Time
-            </span>
-            :
-            <span className="w-15 flex justify-start items-center text-cc-primery/70">
-              {formatTime(time)}
-            </span>
-          </p>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            onClick={() => {
-              setStarted(false);
-              setCompleted(false);
-              setTime(0);
-              setScore(0);
-              setCurrentIndex(0);
-              setSelected(null);
-              setShuffledWords([...puzzle.words].sort(() => Math.random() - 0.5));
-            }}
-            className="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2 rounded-xl flex items-center gap-2"
-          >
-            <RefreshCcw size={16} /> Restart
-          </button>
-          <button
-            onClick={() => (window.location.href = "/")}
-            className="bg-cc-primery hover:opacity-80 transition-all cursor-pointer text-cc-background px-5 py-2 rounded-xl font-semibold flex items-center gap-2"
-          >
-            <ArrowLeft size={16} /> Go Back
-          </button>
-        </div>
-      </motion.div>
+      <EndScreen score={`${score} / ${puzzle.words.length}` } time={formatTime(time)} handleRestart={handleRestart} />
     );
   }
 
@@ -170,11 +130,11 @@ export default function PuzzlePage() {
           const isSelected = selected === word;
           const isCorrect = word === correct;
 
-          let colorClass = "bg-gray-800 hover:bg-gray-700";
+          let colorClass = "bg-cc-foreground hover:bg-cc-hover";
           if (selected) {
             if (isSelected && isCorrect) colorClass = "bg-green-600 border-green-400";
             else if (isSelected && !isCorrect) colorClass = "bg-red-600 border-red-400";
-            else colorClass = "bg-gray-800 opacity-50";
+            else colorClass = "bg-cc-foreground opacity-50";
           }
 
           return (
@@ -183,7 +143,7 @@ export default function PuzzlePage() {
               key={i}
               onClick={() => handleAnswer(word)}
               disabled={!!selected}
-              className={`${colorClass} rounded-xl p-3 font-semibold cursor-pointer transition-colors duration-200 border border-transparent`}
+              className={`${colorClass} rounded-xl p-3 font-semibold cursor-pointer transition-all border-2 border-transparent`}
             >
               {word}
             </motion.button>

@@ -1,22 +1,29 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { Github, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { File, FileCode, FileText, Github, Plus, X } from "lucide-react";
 import LoadingDots from "@/components/LoadingDots";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import JSONValidationInfo from "@/components/JSONValidationInfo";
+import JSONError from "@/components/JSONError";
+import FileMenu from "@/components/FileMenu";
+import FileInfo from "@/components/FileInfo";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showJsonInfo, setShowJsonInfo] = useState(false);
+  const [showInvalidJson, setShowInvalidJson] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const handleGenerate = async () => {
-    
     if (!topic && !file) {
       setError("Please enter a topic or upload a PDF!");
       return;
@@ -24,21 +31,17 @@ export default function Home() {
 
     setLoading(true);
     setError("");
-    
+
     const formData = new FormData();
     if (topic) formData.append("topic", topic);
     if (file) formData.append("file", file);
 
     try {
       console.log("Sending request to /api/gemini...");
-      
       const res = await fetch("/api/gemini", {
         method: "POST",
         body: formData,
       });
-
-      console.log("Response status:", res.status);
-      console.log("Response headers:", res.headers);
 
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -48,25 +51,16 @@ export default function Home() {
       }
 
       const data = await res.json();
-      
       console.log("Received data:", data);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      if (!data.words || !data.clues) {
-        throw new Error("Invalid puzzle data received");
-      }
+      if (data.error) throw new Error(data.error);
+      if (!data.words || !data.clues) throw new Error("Invalid puzzle data received");
 
       localStorage.setItem("puzzle", JSON.stringify(data));
       router.push("/puzzle");
-      
     } catch (err) {
       console.error("Error generating puzzle:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to generate puzzle";
-      setError(errorMessage);
-      alert(errorMessage);
+      alert("Failed to generate puzzle");
     } finally {
       setLoading(false);
     }
@@ -75,21 +69,45 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      
       if (selectedFile.type !== "application/pdf") {
         setError("Please select a PDF file");
         return;
       }
-      
+
       if (selectedFile.size > 10 * 1024 * 1024) {
         setError("PDF file must be smaller than 10MB");
         return;
       }
-      
+
       setFile(selectedFile);
       setError("");
       console.log("File selected:", selectedFile.name, selectedFile.size, "bytes");
     }
+  };
+
+  const handleJsonChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (selectedFile.type !== "application/json") {
+      setError("Please select a JSON file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const jsonData = JSON.parse(event.target?.result as string);
+        if (!jsonData.words || !jsonData.clues) {
+          throw new Error("Invalid JSON structure: must include 'words' and 'clues'");
+        }
+        localStorage.setItem("puzzle", JSON.stringify(jsonData));
+        router.push("/puzzle");
+      } catch (err) {
+        setShowInvalidJson(true);
+      }
+    };
+    reader.readAsText(selectedFile);
   };
 
   return (
@@ -108,9 +126,9 @@ export default function Home() {
       >
         Ulzhan
       </motion.h1>
-      
+
       <motion.p
-        className="w-[60%] max-[800px]:w-[90%] origin-center text-center text-[max(14px,min(2vw,20px))] text-cc-primery/50 leading-[1.8] flex justify-center items-center"
+        className="w-[500px] max-[650px]:w-full origin-center text-center text-[max(14px,min(2vw,20px))] text-cc-primery/50 leading-[1.8] flex justify-center items-center"
         initial={{ scaleX: 0.8, opacity: 0 }}
         whileInView={{ scaleX: 1, opacity: 1 }}
         viewport={{ once: false }}
@@ -121,28 +139,20 @@ export default function Home() {
           ease: "circOut",
         }}
       >
-        Enter a topic or upload a PDF to create a custom puzzle
+        Enter a topic and attach a PDF or JSON to create a personalized puzzle.
       </motion.p>
 
       <input
         type="text"
         placeholder="Enter a topic (e.g. Space, Food...)"
-        className="px-5 py-2.5 rounded-lg bg-gray-800 text-white w-90 outline-none max-[400px]:w-full"
+        className="px-5 py-2.5 rounded-lg bg-cc-foreground text-cc-primery w-90 outline-none max-[400px]:w-full"
         value={topic}
         onChange={(e) => setTopic(e.target.value)}
         disabled={loading}
       />
 
       {file && (
-        <div className="text-sm text-gray-400 flex items-center gap-2">
-          📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
-          <button
-            onClick={() => setFile(null)}
-            className="text-red-400 hover:text-red-300"
-          >
-            ✕
-          </button>
-        </div>
+        <FileInfo file={file} action={setFile} />
       )}
 
       <input
@@ -152,8 +162,15 @@ export default function Home() {
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
+      <input
+        ref={jsonInputRef}
+        type="file"
+        accept="application/json"
+        style={{ display: "none" }}
+        onChange={handleJsonChange}
+      />
 
-      <div className="flex justify-center items-center gap-2 w-90 max-[400px]:w-full">
+      <div className="flex justify-center items-center gap-2 w-90 max-[400px]:w-full relative">
         <motion.button
           whileTap={{ scale: 0.95 }}
           disabled={loading || (!topic && !file)}
@@ -170,21 +187,47 @@ export default function Home() {
           )}
         </motion.button>
 
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
-          className="bg-gray-800 px-2.5 py-2.5 rounded-xl hover:bg-gray-700 transition-all disabled:opacity-50 cursor-pointer"
-        >
-          <Plus />
-        </button>
+        <div className="relative">
+          <motion.button
+            onClick={() => setShowDropdown((p) => !p)}
+            disabled={loading}
+            className="bg-cc-foreground px-2.5 py-2.5 rounded-xl hover:bg-cc-hover transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center"
+          >
+            <motion.span
+              animate={{ rotate: showDropdown ? 45 : 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            >
+              <Plus />
+            </motion.span>
+          </motion.button>
+
+          <FileMenu
+            show={showDropdown}
+            close={setShowDropdown}
+            ref={fileInputRef}
+            action={setShowJsonInfo}
+          />
+        </div>
 
         <Link
           href={"https://github.com/knightwor/ulzhan"}
-          className="bg-gray-800 px-2.5 py-2.5 rounded-xl hover:bg-gray-700 transition-all"
+          className="bg-cc-foreground px-2.5 py-2.5 rounded-xl hover:bg-cc-hover transition-all"
         >
           <Github />
         </Link>
       </div>
+
+      <JSONValidationInfo
+        show={showJsonInfo}
+        close={setShowJsonInfo}
+        ref={jsonInputRef}
+      />
+
+      <JSONError
+        show={showInvalidJson}
+        close={setShowInvalidJson}
+      />
+
     </main>
   );
 }

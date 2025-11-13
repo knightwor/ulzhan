@@ -23,13 +23,13 @@ export default function UploadForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col items-center gap-4 bg-gray-900 p-6 rounded-2xl shadow-lg"
+      className="flex flex-col items-center gap-4 bg-cc-foreground p-6 rounded-2xl shadow-lg"
     >
       <input
         name="topic"
         type="text"
         placeholder="Enter topic..."
-        className="w-full p-3 rounded-lg bg-gray-800 focus:outline-none"
+        className="w-full p-3 rounded-lg bg-cc-foreground focus:outline-none"
       />
       <input
         name="file"

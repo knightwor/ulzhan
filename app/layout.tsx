@@ -54,7 +54,7 @@ const herokingFont = localFont({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={rebarFont.variable + " " + gothicFont.variable + " " + gobittaFont.variable + " " + magicRubyFont.variable + " " + herokingFont.variable + " dark gradient-bg"}
+      <body className={rebarFont.variable + " " + gothicFont.variable + " " + gobittaFont.variable + " " + magicRubyFont.variable + " " + herokingFont.variable + " dark"}
         suppressHydrationWarning
         suppressContentEditableWarning>
        
