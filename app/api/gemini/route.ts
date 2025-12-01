@@ -3,6 +3,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const runtime = "nodejs";
 
+async function detectTopicFromPDF(ai: GoogleGenerativeAI, text: string) {
+  const prompt = `
+Extract the **single best topic** from the text below.
+Return ONLY the topic, nothing else.
+
+Text:
+${text.slice(0, 3000)}
+`;
+
+  const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const result = await model.generateContent(prompt);
+
+  return result.response.text().trim();
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -10,7 +25,7 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File | null;
 
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    
+
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not configured in environment variables");
     }
@@ -21,31 +36,29 @@ export async function POST(req: Request) {
     if (file) {
       try {
         console.log("Processing PDF file:", file.name);
-        
-        
+
         const pdfjsLib = await import("pdfjs-dist");
-        
-        
+
+
         const pdfjsVersion = pdfjsLib.version || "3.11.174";
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.js`;
-        
+
         const arrayBuffer = await file.arrayBuffer();
         const typedArray = new Uint8Array(arrayBuffer);
-        
-        // Load the PDF document
+
         const loadingTask = pdfjsLib.getDocument({ data: typedArray });
         const pdfDoc = await loadingTask.promise;
-        
+
         console.log(`PDF loaded: ${pdfDoc.numPages} pages`);
-        
+
         let extractedText = "";
-        
-        
+
+
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
           const page = await pdfDoc.getPage(pageNum);
           const textContent = await page.getTextContent();
-          
-          
+
+
           const pageText = textContent.items
             .map((item: any) => {
               if ('str' in item) {
@@ -54,29 +67,42 @@ export async function POST(req: Request) {
               return '';
             })
             .join(" ");
-          
+
           extractedText += pageText + "\n";
-          
-         
+
+
           if (extractedText.length > 5000) {
             console.log("Text limit reached, stopping at page", pageNum);
             break;
           }
         }
-        
+
         const trimmedText = extractedText.trim();
-        
+
         if (trimmedText.length > 0) {
-          
-          context = trimmedText.slice(0, 4000);
-          console.log(`PDF extracted successfully: ${trimmedText.length} characters (using ${context.length})`);
-        } else {
+          if (!topic) {
+            console.log("Detecting topic from PDF...");
+
+            const detectedTopic = await detectTopicFromPDF(ai, trimmedText);
+
+            if (detectedTopic && detectedTopic.length > 2) {
+              console.log("Topic auto-detected:", detectedTopic);
+              context = detectedTopic;
+            } else {
+              console.warn("Topic detection failed, using extracted text");
+              context = trimmedText.slice(0, 4000);
+            }
+          } else {
+            context = topic;
+          }
+        }
+        else {
           console.warn("PDF text extraction returned empty, using topic");
         }
-        
+
       } catch (pdfError) {
         console.error("PDF parsing error:", pdfError);
-        
+
         if (!topic) {
           return NextResponse.json(
             {
@@ -142,7 +168,7 @@ Now create a puzzle based on the provided context.
     } catch (parseError) {
       console.error("JSON parse failed:", parseError);
       console.error("Attempted to parse:", cleanText);
-      
+
       // Fallback puzzle
       data = {
         title: topic || "Fallback Puzzle",
@@ -154,11 +180,11 @@ Now create a puzzle based on the provided context.
     if (!data.title) {
       data.title = topic || "Word Puzzle";
     }
-    
+
     if (!Array.isArray(data.words) || data.words.length === 0) {
       data.words = ["AI", "Code", "NextJS"];
     }
-    
+
     if (!Array.isArray(data.clues) || data.clues.length === 0) {
       data.clues = data.words.map((w: string) => `Hint related to ${w}`);
     }
@@ -177,15 +203,15 @@ Now create a puzzle based on the provided context.
     console.log("Returning puzzle:", data.title, "with", data.words.length, "words");
 
     return NextResponse.json(data);
-    
+
   } catch (error) {
     console.error("API Route Error:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    
+
     console.error("Error stack:", errorStack);
-    
+
     return NextResponse.json(
       {
         error: errorMessage,
@@ -197,3 +223,4 @@ Now create a puzzle based on the provided context.
     );
   }
 }
+
