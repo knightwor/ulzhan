@@ -3,16 +3,11 @@ import React from 'react'
 
 export default function JSONFormat() {
     return (
-        <pre className="bg-cc-background border-2 border-cc-hover rounded-lg p-3 text-xs text-cc-primery/70 overflow-x-auto mb-4 monospace">
+        <pre className="bg-red-900/30 rounded-[10px] border-l-[5px] border-l-red-900 px-5 py-2.5 p-3 w-full text-xs text-cc-primery overflow-x-auto monospace">
             {`{
-  "title": "Space Exploration",
-  "words": ["Rocket", "NASA", "Moon", "Astronaut"],
-  "clues": [
-    "Vehicle used to travel into space",
-    "US space agency",
-    "Earth's satellite",
-    "Person who travels in space"
-  ]
+  "title": "",
+  "words": ["", ""],
+  "clues": ["", ""]
 }`}
         </pre>
     )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Timer, Trophy, RefreshCcw, Download } from "lucide-react";
+import {  ClockFading, Lightbulb } from "lucide-react";
 import StartScreen from "./components/StartScreen";
 import EndScreen from "./components/EndScreen";
 
@@ -101,22 +101,56 @@ export default function PuzzlePage() {
 
   if (completed) {
     return (
-      <EndScreen score={`${score} / ${puzzle.words.length}` } time={formatTime(time)} handleRestart={handleRestart} />
+      <EndScreen score={`${score} / ${puzzle.words.length}`} time={formatTime(time)} handleRestart={handleRestart} />
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center space-y-6 px-6">
-      <div className="flex items-center gap-3 text-cc-primery/50">
-        <Timer size={18} /> <span>{formatTime(time)}</span>
-      </div>
+    <motion.div
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{
+        type: "spring",
+        stiffness: 100
+      }}
+      className="flex flex-col items-center justify-center p-5 bg-violet-200 w-[400px] max-[450px]:w-[95%] max-[450px]:p-3 rounded-[20px] border-[3px] border-cc-background text-center gap-3 ">
+      <motion.div
+        initial={{ y: -10, scale: 0.9, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 100
+        }}
+        className="flex items-center gap-3 text-cc-background font-bold justify-center bg-cc-primery border-[3px] border-cc-background rounded-[20px] px-3 py-2.5 mr-auto">
+        <ClockFading size={24} strokeWidth={2.5} /> <span>{formatTime(time)}</span>
+      </motion.div>
 
-      <h1 className="text-4xl font-bold text-cc-accent sub-heading">
+      <motion.h1
+        initial={{ y: -10, scale: 0.5, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 100
+        }}
+        className="text-4xl font-bold text-gray-900 sub-heading">
         Clue {currentIndex + 1} of {puzzle.words.length}
-      </h1>
-      <p className="max-w-md text-[max(14px,min(2vw,20px))] text-cc-primery/50 leading-[1.8] flex justify-center items-center">
-        {puzzle.clues[currentIndex]}
-      </p>
+      </motion.h1>
+      <motion.p
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{
+          delay: 0.1,
+          type: "spring",
+          stiffness: 100
+        }}
+        className="max-w-md text-[1.1rem] text-cc-background italic underline font-semibold leading-[1.8] flex justify-center items-center gap-2">
+        <span>
+          <Lightbulb size={24} />
+        </span>
+        <span>
+          {puzzle.clues[currentIndex]}
+        </span>
+      </motion.p>
 
       <motion.div
         key={currentIndex}
@@ -130,26 +164,33 @@ export default function PuzzlePage() {
           const isSelected = selected === word;
           const isCorrect = word === correct;
 
-          let colorClass = "bg-cc-foreground hover:bg-cc-hover";
+          let colorClass = " bg-cc-primery text-cc-background hover:bg-cc-background hover:text-cc-primery border-cc-background";
           if (selected) {
-            if (isSelected && isCorrect) colorClass = "bg-green-600 border-green-400";
-            else if (isSelected && !isCorrect) colorClass = "bg-red-600 border-red-400";
-            else colorClass = "bg-cc-foreground opacity-50";
+            if (isSelected && isCorrect) colorClass = "bg-green-200 border-cc-background text-cc-background";
+            else if (isSelected && !isCorrect) colorClass = "bg-[#fd5c63] border-cc-background text-cc-primery";
+            else colorClass = "bg-cc-background text-cc-primery border-cc-background";
           }
 
           return (
             <motion.button
+              initial={{ scale: 0.8, y: 0, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
               whileTap={{ scale: 0.9 }}
+              transition={{
+                delay: i * 0.05,
+                type: "spring",
+                stiffness: 100
+              }}
               key={i}
               onClick={() => handleAnswer(word)}
               disabled={!!selected}
-              className={`${colorClass} rounded-xl p-3 font-semibold cursor-pointer transition-all border-2 border-transparent`}
+              className={`${colorClass} rounded-[20px] w-full p-3 font-semibold transition-colors duration-400 border-[3px] `}
             >
               {word}
             </motion.button>
           );
         })}
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

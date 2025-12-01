@@ -20,7 +20,7 @@ export default function FileMenu({ show, close, ref, action }
                             close(false);
                             ref.current?.click();
                         }}
-                        className="w-full text-left px-2 py-2 hover:bg-cc-hover text-cc-primery text-sm flex gap-2 justify-start items-center cursor-pointer font-semibold transition-all"
+                        className="w-full text-left px-2 py-2 hover:bg-cc-hover text-cc-primery text-sm flex gap-2 justify-start items-center  font-semibold transition-all duration-400"
                     >
                         <FileText size={18} strokeWidth={2} />
                         <span>PDF</span>
@@ -31,7 +31,7 @@ export default function FileMenu({ show, close, ref, action }
                             close(false);
                             action(true);
                         }}
-                        className="w-full text-left px-2 py-2 hover:bg-cc-hover text-cc-primery text-sm flex gap-2 justify-start items-center cursor-pointer font-semibold transition-all"
+                        className="w-full text-left px-2 py-2 hover:bg-cc-hover text-cc-primery text-sm flex gap-2 justify-start items-center  font-semibold transition-all duration-400"
                     >
                         <FileCode size={18} strokeWidth={2} />
                         <span>JSON</span>

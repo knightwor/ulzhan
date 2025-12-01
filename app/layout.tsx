@@ -1,9 +1,6 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
-import PageTransition from "@/components/PageTransition";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Ulzhan — Puzzle Generator",
@@ -51,14 +48,26 @@ const herokingFont = localFont({
   display: 'swap',
 });
 
+const revainFont = localFont({
+  src: [
+    { path: '../public/fonts/revain.ttf', weight: '400', style: 'normal' }
+  ],
+  variable: '--font-revain',
+  display: 'swap',
+});
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const bgColors = ['#FBCEB1', '#B0C4DE', '#ACE1AF', '#FFDEAD'];
+  const randomColor = bgColors[Math.floor(Math.random() * bgColors.length)];
+
   return (
     <html lang="en">
-      <body className={rebarFont.variable + " " + gothicFont.variable + " " + gobittaFont.variable + " " + magicRubyFont.variable + " " + herokingFont.variable + " dark"}
+      <body className={`${rebarFont.variable} ${gothicFont.variable} ${gobittaFont.variable} ${magicRubyFont.variable} ${herokingFont.variable} ${revainFont.variable} dark`
+      }
+        style={{ backgroundColor: randomColor }}
         suppressHydrationWarning
         suppressContentEditableWarning>
-       
-        <PageTransition>{children}</PageTransition>
+        {children}
       </body>
     </html>
   );
