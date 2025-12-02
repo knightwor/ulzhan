@@ -1,3 +1,4 @@
+import BackgroundProvider from "@/components/BackgroundProvider";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
@@ -57,17 +58,14 @@ const revainFont = localFont({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const bgColors = ['#FBCEB1', '#B0C4DE', '#ACE1AF', '#FFDEAD'];
-  const randomColor = bgColors[Math.floor(Math.random() * bgColors.length)];
 
   return (
     <html lang="en">
       <body className={`${rebarFont.variable} ${gothicFont.variable} ${gobittaFont.variable} ${magicRubyFont.variable} ${herokingFont.variable} ${revainFont.variable} dark`
       }
-        style={{ backgroundColor: randomColor }}
         suppressHydrationWarning
         suppressContentEditableWarning>
-        {children}
+        <BackgroundProvider>{children}</BackgroundProvider>
       </body>
     </html>
   );

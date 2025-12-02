@@ -25,7 +25,7 @@ export default function Dailog(
                             
                         </div>
 
-                        <p className=" text-cc-primery italic font-medium text-[1.05rem] bg-red-900/30 rounded-[10px] border-l-[5px] border-l-red-900 px-5 py-2.5">
+                        <p className=" text-cc-primery font-medium text-[1.05rem] bg-red-900/30 rounded-[10px] border-l-[5px] border-l-red-900 px-5 py-2.5">
                             {body}
                         </p>
 
